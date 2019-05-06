@@ -58,7 +58,8 @@ static const char clientcredentialMQTT_BROKER_ENDPOINT[] = "a37aikyqjeuin8-ats.i
 // "Paste Wi-Fi SSID here."
 // donotenter2.4
 // ATTycAStJA
-#define clientcredentialWIFI_SSID       "SpankersAnonymous"
+//SpankersAnonymous
+#define clientcredentialWIFI_SSID       "ATTycAStJA"
 
 /*
  * Password needed to join Wi-Fi network.
@@ -66,7 +67,8 @@ static const char clientcredentialMQTT_BROKER_ENDPOINT[] = "a37aikyqjeuin8-ats.i
 // "Paste Wi-Fi password here."
 // killsanjay
 // i+uyjv#jzi%?
-#define clientcredentialWIFI_PASSWORD   "Salual@n75$"
+//Salual@n75$
+#define clientcredentialWIFI_PASSWORD   "i+uyjv#jzi%?"
 
 /**
  * @brief Security type

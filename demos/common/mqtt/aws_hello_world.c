@@ -96,7 +96,7 @@
  */
 #define echoTOPIC_NAME_pub           ( ( const uint8_t * ) "sensor" )
 
-#define echoTOPIC_NAME_sub           ( ( const uint8_t * ) "fan" )
+#define echoTOPIC_NAME_sub           ( ( const uint8_t * ) "heating" )
 
 /**
  * @brief The string appended to messages that are echoed back to the MQTT broker.
@@ -454,15 +454,23 @@ static MQTTBool_t prvMQTTCallback( void * pvUserData,
 
          configPRINTF( ("hitting if block\r\n") );
 
-         if (GPIO_read(6)) {
-            GPIO_write(6, 0);
-            GPIO_write(8, 0);
-            GPIO_write(10, 0);
+         configPRINTF( ("message from console: %s\r\n", cBuffer) );
+
+         if (strcmp(cBuffer, "turnOff") == 0) {
+             configPRINTF( ("turning on \r\n") );
+             // fan port
+             GPIO_write(6, 0);
+             // LEDs used as indicators
+             GPIO_write(8, 0);
+             GPIO_write(10, 0);
          }
-         else {
-            GPIO_write(6, 1);
-            GPIO_write(8, 1);
-            GPIO_write(10, 1);
+         else if (strcmp(cBuffer, "turnOn") == 0) {
+             configPRINTF( ("turning off \r\n") );
+             // fan port
+             GPIO_write(6, 1);
+             // LEDs used as indicators
+             GPIO_write(8, 1);
+             GPIO_write(10, 1);
          }
 
          /* Only echo the message back if it has not already been echoed.  If the
