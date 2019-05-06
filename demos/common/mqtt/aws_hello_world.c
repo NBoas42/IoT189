@@ -96,7 +96,7 @@
  */
 #define echoTOPIC_NAME_pub           ( ( const uint8_t * ) "sensor" )
 
-#define echoTOPIC_NAME_sub           ( ( const uint8_t * ) "heating" )
+#define echoTOPIC_NAME_sub           ( ( const uint8_t * ) "cooling" )
 
 /**
  * @brief The string appended to messages that are echoed back to the MQTT broker.
