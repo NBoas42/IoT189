@@ -96,7 +96,7 @@
  */
 #define echoTOPIC_NAME_pub           ( ( const uint8_t * ) "sensor" )
 
-#define echoTOPIC_NAME_sub           ( ( const uint8_t * ) "cooling" )
+#define echoTOPIC_NAME_sub           ( ( const uint8_t * ) "tempReading" )
 
 /**
  * @brief The string appended to messages that are echoed back to the MQTT broker.
@@ -208,6 +208,8 @@ static void prvMacForHumans(uint8_t * humanAddress);
 static uint8_t thing_mac_address[ ( wificonfigMAX_BSSID_LEN * 2 ) + 1 ];
 static I2C_Handle xI2C;
 
+TaskHandle_t xTempReadHandle;
+
 static BaseType_t prvCreateClientAndConnectToBroker( void )
 {
     MQTTAgentReturnCode_t xReturned;
@@ -302,9 +304,6 @@ static void prvPublishNextMessage( BaseType_t xMessageNumber )
     {
         configPRINTF( ( "ERROR:  Echo failed to publish '%s'\r\n", cDataBuffer ) );
     }
-
-//    GPIO_write(Board_GPIO_LED2, Board_GPIO_LED_OFF);
-//    GPIO_write(Board_GPIO_LED1, Board_GPIO_LED_ON);
 
     /* Remove compiler warnings in case configPRINTF() is not defined. */
     ( void ) xReturned;
@@ -457,20 +456,12 @@ static MQTTBool_t prvMQTTCallback( void * pvUserData,
          configPRINTF( ("message from console: %s\r\n", cBuffer) );
 
          if (strcmp(cBuffer, "turnOff") == 0) {
-             configPRINTF( ("turning on \r\n") );
-             // fan port
-             GPIO_write(6, 0);
-             // LEDs used as indicators
-             GPIO_write(8, 0);
-             GPIO_write(10, 0);
+             vTaskSuspend(xTempReadHandle);
+             configPRINTF( ("suspending temperature reading\r\n") );
          }
          else if (strcmp(cBuffer, "turnOn") == 0) {
-             configPRINTF( ("turning off \r\n") );
-             // fan port
-             GPIO_write(6, 1);
-             // LEDs used as indicators
-             GPIO_write(8, 1);
-             GPIO_write(10, 1);
+             vTaskResume(xTempReadHandle);
+             configPRINTF( ("resuming temperature reading\r\n") );
          }
 
          /* Only echo the message back if it has not already been echoed.  If the
@@ -576,7 +567,7 @@ void vStartMQTTEchoDemo( void )
     configPRINTF( ( "Creating MQTT Echo Task...\r\n" ) );
     BaseType_t xReturned;
     BaseType_t xReturnedSub;
-//    I2C_init();
+    I2C_init();
 //    GPIO_init();
     xMQTTTaskParameter taskParameter_temperature;
     prvMacForHumans(thing_mac_address);
@@ -599,14 +590,14 @@ void vStartMQTTEchoDemo( void )
         configPRINTF( ("mac address: %s\r\n", thing_mac_address) );
 //        temperature/%s
 //        thing_mac_address
-        snprintf( taskParameter_temperature.topic, sizeof( taskParameter_temperature.topic ), "Temperature");
+        snprintf( taskParameter_temperature.topic, sizeof( taskParameter_temperature.topic ), "updateTemp");
 
-        // xReturned = xTaskCreate( prvTempSensorReaderTask,
-        //                           "TMP006",
-        //                           TEMP_TASK_STACK_SIZE,
-        //                           ( void * ) &taskParameter_temperature,
-        //                           TEMP_TASK_PRIORITY,
-        //                           NULL );
+         xReturned = xTaskCreate( prvTempSensorReaderTask,
+                                   "TMP006",
+                                   TEMP_TASK_STACK_SIZE,
+                                   ( void * ) &taskParameter_temperature,
+                                   TEMP_TASK_PRIORITY,
+                                   &xTempReadHandle );
     }
 
 //    REMOVED FROM LAB3
@@ -708,7 +699,7 @@ static void prvTempSensorReaderTask( void * pvParameters )
 
         // configPRINTF(("Celsius: %f, Fahrenheit: %f\r\n", temperatureC, temperatureF));
 
-        snprintf(cDataBuffer, sizeof( cDataBuffer), "{\"temperature\":%f, \"d\":\"%s\"}", temperatureF, thing_mac_address);
+        snprintf(cDataBuffer, sizeof( cDataBuffer), "{\"temp\":%f}", temperatureF);
 
         MQTTAgentPublishParams_t pxPublishParams;
         pxPublishParams.pucTopic = ( uint8_t * ) pxParameters->topic;
@@ -717,14 +708,14 @@ static void prvTempSensorReaderTask( void * pvParameters )
         pxPublishParams.ulDataLength = ( uint32_t )  strlen(( const char * )cDataBuffer);
         pxPublishParams.xQoS =  eMQTTQoS1;
 
-        // if ( MQTT_AGENT_Publish(xMQTTHandle, &( pxPublishParams ),
-        //         democonfigMQTT_TIMEOUT) == eMQTTSuccess )
-        // {
-        //     configPRINTF(("Outbound sent successfully.\r\n"));
-        // }
-        // else
-        // {
-        //     configPRINTF(("Outbound NOT sent successfully.\r\n"));
-        // }
+         if ( MQTT_AGENT_Publish(xMQTTHandle, &( pxPublishParams ),
+                 democonfigMQTT_TIMEOUT) == eMQTTSuccess )
+         {
+             configPRINTF(("Outbound sent successfully.\r\n"));
+         }
+         else
+         {
+             configPRINTF(("Outbound NOT sent successfully.\r\n"));
+         }
     }
 }
